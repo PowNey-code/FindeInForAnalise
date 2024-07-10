@@ -21,11 +21,7 @@ if tuple_files is False:
 # print('Список файлов:', tuple_files)
 
 
-# rr = fn.read_docx('files/123.docx')
-# print(rr)
-tuple_files = ('files/123.rtf',)
-
-
+tuple_files = ('files/123.docx',)
 for file in tuple_files:
     match file[-4:]:
         case 'docx':
@@ -38,7 +34,7 @@ for file in tuple_files:
             print('rtf', fn.read_rtf(file))
 
         case '.odt':
-            print('odt', file)
+            print('odt', fn.read_odt(file))
 
         case '.txt':
             print('txt', fn.read_txt(file))

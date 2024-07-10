@@ -1,8 +1,10 @@
 from typing import Literal
 from os.path import join, isfile, isdir
 from os import walk
-from rtfparse.parser import Rtf_Parser
 import docx
+from striprtf.striprtf import rtf_to_text
+from odf import text, teletype
+from odf.opendocument import load as odf_load
 import sets
 
 def read_key_word(file_name: str = 'list_of_KeyWords.txt') -> tuple[str, ...] | Literal[False]:
@@ -50,7 +52,7 @@ def read_docx(file: str) -> tuple[str, ...] | Literal[False]:
     if len(paragraphs) < 1:
         return False
 
-    rows = *(paragraph.text for paragraph in paragraphs),
+    rows = *(paragraph.text for paragraph in paragraphs if paragraph.text != ''),
     return rows
 
 def read_txt(file: str) -> tuple[str, ...] | Literal[False]:
@@ -62,14 +64,28 @@ def read_txt(file: str) -> tuple[str, ...] | Literal[False]:
     return rows
 
 def read_rtf(file: str) -> tuple[str, ...] | Literal[False]:
+    with open(file=file, mode='r') as f:
+        file_content=f.read()
+    text_content=rtf_to_text(file_content)
+    rows = text_content.split('\n')
+    rows = *(row for row in rows if row != ''),
 
-    parser = Rtf_Parser(rtf_path=file)
-    parsed = parser.parse_file()
+    if len(rows) == 0:
+        return False
 
-    print(parsed)
+    return rows
 
-    # if len(rows) == 0:
-    #     return False
+def read_odt(file: str) -> tuple[str, ...] | Literal[False]:
+    textdoc = odf_load(file)
+    paragraphs = textdoc.getElementsByType(text.P)
 
-    # https://stackoverflow.com/questions/72272914/read-rtf-file-using-python
-    return ''
+    rows: tuple[str, ...] = ()
+    for paragraph in paragraphs:
+        row = teletype.extractText(paragraph)
+        if row != '':
+            rows += (row,)
+
+    if len(rows) == 0:
+        return False
+    
+    return rows

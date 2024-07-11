@@ -60,13 +60,13 @@ def read_any_text_file(path_file: str) -> tuple[str, ...] | Literal[False]:
 def read_doc(file: str) -> tuple[str, ...] | Literal[False]:
     word_app = Dispatch("Word.Application")
     doc = word_app.Documents.Open(file)
-    
+
     rows: tuple[str, ...] = ()
     for paragraph in doc.Paragraphs:
         row = paragraph.Range.Text.strip()
         if row != '':
             rows += (row,)
-    
+
     doc.Close()
     word_app.Quit()
 

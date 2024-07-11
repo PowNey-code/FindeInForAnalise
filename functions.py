@@ -5,6 +5,7 @@ import docx
 from striprtf.striprtf import rtf_to_text
 from odf import text, teletype
 from odf.opendocument import load as odf_load
+from win32com.client import Dispatch
 import sets
 
 def read_key_word(file_name: str = 'list_of_KeyWords.txt') -> tuple[str, ...] | Literal[False]:
@@ -37,7 +38,7 @@ def get_tuple_files(folder: str = join(sets.P, sets.default_dir_with_files)) -> 
     tuple_files_in_function: tuple[str, ...] = ()
     for(root, dirs, files) in walk(folder, True):
         for file in files:
-            for pattern in sets.pattern_name_files:
+            for pattern in ('.txt', '.doc', '.odt', '.rtf'):
                 if pattern in file[-5:]:
                     tuple_files_in_function += (join(root, file),)
 
@@ -46,18 +47,43 @@ def get_tuple_files(folder: str = join(sets.P, sets.default_dir_with_files)) -> 
 
     return tuple_files_in_function
 
+def read_any_text_file(path_file: str) -> tuple[str, ...] | Literal[False]:
+    match path_file[-4:]:
+        case 'docx': return read_docx(path_file)
+        case '.doc': return read_doc(path_file)
+        case '.rtf': return read_rtf(path_file)
+        case '.odt': return read_odt(path_file)
+        case '.txt': return read_txt(path_file)
+        case _: return False
+
+
+def read_doc(file: str) -> tuple[str, ...] | Literal[False]:
+    word_app = Dispatch("Word.Application")
+    doc = word_app.Documents.Open(file)
+    
+    rows: tuple[str, ...] = ()
+    for paragraph in doc.Paragraphs:
+        row = paragraph.Range.Text.strip()
+        if row != '':
+            rows += (row,)
+    
+    doc.Close()
+    word_app.Quit()
+
+    return rows
+
 def read_docx(file: str) -> tuple[str, ...] | Literal[False]:
     doc = docx.Document(file)
     paragraphs = doc.paragraphs
     if len(paragraphs) < 1:
         return False
 
-    rows = *(paragraph.text for paragraph in paragraphs if paragraph.text != ''),
+    rows = tuple(paragraph.text for paragraph in paragraphs if paragraph.text != '')
     return rows
 
 def read_txt(file: str) -> tuple[str, ...] | Literal[False]:
     with open(file, encoding='utf-8') as f:
-        rows = *(row.strip() for row in f.readlines()),
+        rows = tuple(row.strip() for row in f.readlines())
 
     if len(rows) == 0:
         return False
@@ -68,7 +94,7 @@ def read_rtf(file: str) -> tuple[str, ...] | Literal[False]:
         file_content=f.read()
     text_content=rtf_to_text(file_content)
     rows = text_content.split('\n')
-    rows = *(row for row in rows if row != ''),
+    rows = tuple(row for row in rows if row != '')
 
     if len(rows) == 0:
         return False
